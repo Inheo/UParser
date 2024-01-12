@@ -1,9 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
-using UnityEditor.UIElements;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -11,12 +9,26 @@ namespace Inheo.UParser
 {
     internal class CreateMenuContextWindow : EditorWindow
     {
+        class ReorderableJArray
+        {
+            private const float elementHeight = 20;
+            public JArray JArray;
+            public ReorderableList ReorderableList;
+
+            public ReorderableJArray(JArray jArray, ReorderableList reorderableList)
+            {
+                JArray = jArray;
+                ReorderableList = reorderableList;
+                ReorderableList.elementHeight = elementHeight;
+            }
+        }
+
         private int tabIndex = 0;
         private static EditorWindow _window;
         private TextAsset _textFile;
 
         private JObject _currentJson;
-        private SerializedObject so;
+        private Dictionary<string, ReorderableJArray> arrayTokens;
 
         [MenuItem("Window/UParser")]
         private static void ShowWindow()
@@ -31,13 +43,14 @@ namespace Inheo.UParser
 
         private void OnEnable()
         {
-            ScriptableObject target = this;
-            so = new SerializedObject(target);
             //Editor.CreateEditor();
+            arrayTokens = new Dictionary<string, ReorderableJArray>();
         }
 
         private void OnGUI()
         {
+            var indent = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = indent + 1;
             tabIndex = GUILayout.Toolbar(tabIndex, new string[] { "File", "PlayerPrefs" });
             switch (tabIndex)
             {
@@ -48,6 +61,7 @@ namespace Inheo.UParser
                     DrawForPlayerPrefsEditor();
                     break;
             }
+            EditorGUI.indentLevel = indent;
         }
 
         private void DrawForFileEditor()
@@ -87,7 +101,7 @@ namespace Inheo.UParser
                 case JTokenType.None:
                     break;
                 case JTokenType.Array:
-                    DrawArrayToken(token, key, value);
+                    DrawArrayToken((JArray)token, key, value);
                     break;
                 default:
                     DrawTextField(key, value.ToString());
@@ -95,15 +109,32 @@ namespace Inheo.UParser
             }
         }
 
-        private void DrawArrayToken(JToken token, string key, JToken value)
+        private void DrawArrayToken(JArray jArray, string key, JToken value)
         {
-            var index = 0;
-            //var reorderableList = new ReorderableList(so, );
-            foreach (var item in new List<JToken>(token))
+            var indent = EditorGUI.indentLevel;
+            if (!arrayTokens.ContainsKey(key))
             {
-                token[index] = EditorGUILayout.TextField(key, item.ToString());
-                index++;
+                var reorderableList = new ReorderableList(jArray, typeof(JArray), true, true, true, true);
+                arrayTokens[key] = new ReorderableJArray(jArray, reorderableList);
+
+                var reorderableJArray = arrayTokens[key];
+
+                reorderableList.drawHeaderCallback += rect => { EditorGUI.LabelField(rect, key); };
+                reorderableList.drawElementCallback += (rect, i, isActive, isFocused) =>
+                {
+                    EditorGUI.indentLevel = indent + 1;
+                    jArray[i] = EditorGUI.TextField(rect, jArray[i].ToString());
+                    EditorGUI.indentLevel = indent;
+                };
+
+                reorderableList.onAddCallback += D;
             }
+            arrayTokens[key].ReorderableList.DoLayoutList();
+        }
+
+        private void D(ReorderableList list)
+        {
+            list.list.Add(default);
         }
 
         private void DrawTextField(string key, string value)
