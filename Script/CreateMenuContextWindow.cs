@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json.Linq;
@@ -9,26 +10,45 @@ namespace Inheo.UParser
 {
     internal class CreateMenuContextWindow : EditorWindow
     {
+        [Serializable]
         class ReorderableJArray
         {
-            private const float elementHeight = 20;
-            public JArray JArray;
-            public ReorderableList ReorderableList;
+            public bool IsExpand = true;
+            public Rect Rect;
+            public readonly JArray JArray;
+            public readonly ReorderableList ReorderableList;
 
             public ReorderableJArray(JArray jArray, ReorderableList reorderableList)
             {
                 JArray = jArray;
                 ReorderableList = reorderableList;
-                ReorderableList.elementHeight = elementHeight;
+                ReorderableList.displayAdd = IsExpand;
+                ReorderableList.displayRemove = IsExpand;
+                ReorderableList.draggable = IsExpand;
+                ReorderableList.list = IsExpand ? JArray : new List<JToken>(0);
+            }
+
+            public void UpdateExpandState(Event e)
+            {
+                if (e.type == EventType.MouseDown && Rect.Contains(e.mousePosition))
+                {
+                    IsExpand = !IsExpand;
+                    ReorderableList.displayAdd = IsExpand;
+                    ReorderableList.displayRemove = IsExpand;
+                    ReorderableList.draggable = IsExpand;
+                    ReorderableList.list = IsExpand ? JArray : new List<JToken>(0);
+                    e.Use();
+                }
             }
         }
 
-        private int tabIndex = 0;
         private static EditorWindow _window;
-        private TextAsset _textFile;
+        [SerializeField] private int tabIndex = 0;
+        [SerializeField] private TextAsset _textFile;
 
-        private JObject _currentJson;
-        private Dictionary<string, ReorderableJArray> arrayTokens;
+        [SerializeField] private Vector2 scrollPosition;
+        [SerializeField] private JObject _currentJson;
+        [SerializeField] private Dictionary<string, ReorderableJArray> arrayTokens;
 
         [MenuItem("Window/UParser")]
         private static void ShowWindow()
@@ -49,6 +69,7 @@ namespace Inheo.UParser
 
         private void OnGUI()
         {
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
             var indent = EditorGUI.indentLevel;
             EditorGUI.indentLevel = indent + 1;
             tabIndex = GUILayout.Toolbar(tabIndex, new string[] { "File", "PlayerPrefs" });
@@ -62,17 +83,28 @@ namespace Inheo.UParser
                     break;
             }
             EditorGUI.indentLevel = indent;
+
+            EditorGUILayout.EndScrollView();
         }
 
         private void DrawForFileEditor()
         {
             EditorGUI.BeginChangeCheck();
             _textFile = (TextAsset)EditorGUILayout.ObjectField("Text Asset", _textFile, typeof(TextAsset), false);
+            Undo.RecordObject(this, "changed file");
+            var ischecked = EditorGUI.EndChangeCheck();
+            if (ischecked)
+            {
+                EditorUtility.SetDirty(this);
+            }
+
             if (_textFile == null)
                 return;
 
-            if (EditorGUI.EndChangeCheck())
+            if (ischecked)
+            {
                 UpdateCurrentJson();
+            }
 
             if (_currentJson == null && _textFile != null)
                 UpdateCurrentJson();
@@ -81,8 +113,10 @@ namespace Inheo.UParser
 
             DrawCurrentJson();
 
+            EditorGUILayout.BeginHorizontal();
             TrySaveCurrentJsonIntoTextFile();
             TryUpdateCurrentJson();
+            EditorGUILayout.EndHorizontal();
         }
 
         private void DrawCurrentJson()
@@ -112,29 +146,42 @@ namespace Inheo.UParser
         private void DrawArrayToken(JArray jArray, string key, JToken value)
         {
             var indent = EditorGUI.indentLevel;
+            var verticalSpacing = 2f;
+
             if (!arrayTokens.ContainsKey(key))
             {
                 var reorderableList = new ReorderableList(jArray, typeof(JArray), true, true, true, true);
-                arrayTokens[key] = new ReorderableJArray(jArray, reorderableList);
+                var rJAray = new ReorderableJArray(jArray, reorderableList);
+                arrayTokens[key] = rJAray;
 
                 var reorderableJArray = arrayTokens[key];
 
-                reorderableList.drawHeaderCallback += rect => { EditorGUI.LabelField(rect, key); };
-                reorderableList.drawElementCallback += (rect, i, isActive, isFocused) =>
+                reorderableList.drawHeaderCallback = rect =>
                 {
+                    EditorGUI.LabelField(rect, key + $" (Count: {rJAray.JArray.Count})");
+                    rJAray.Rect = rect;
+                    rJAray.UpdateExpandState(Event.current);
+                };
+                reorderableList.drawElementCallback = (rect, i, isActive, isFocused) =>
+                {
+                    if (!rJAray.IsExpand) return;
                     EditorGUI.indentLevel = indent + 1;
+                    rect.height = EditorGUIUtility.singleLineHeight;
+                    rect.y += verticalSpacing;
                     jArray[i] = EditorGUI.TextField(rect, jArray[i].ToString());
                     EditorGUI.indentLevel = indent;
                 };
 
-                reorderableList.onAddCallback += D;
-            }
-            arrayTokens[key].ReorderableList.DoLayoutList();
-        }
+                reorderableList.drawNoneElementCallback = rect =>
+                {
+                    reorderableList.elementHeight = -10;
+                };
 
-        private void D(ReorderableList list)
-        {
-            list.list.Add(default);
+                reorderableList.onAddCallback = list => list.list.Add(default);
+                reorderableList.elementHeightCallback = i => rJAray.IsExpand ? EditorGUIUtility.singleLineHeight + verticalSpacing : 0;
+            }
+
+            arrayTokens[key].ReorderableList.DoLayoutList();
         }
 
         private void DrawTextField(string key, string value)
