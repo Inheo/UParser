@@ -135,11 +135,14 @@ namespace Inheo.UParser
             {
                 case JTokenType.None:
                     break;
+                case JTokenType.String:
+                    DrawSimpleText(key, value.ToString());
+                    break;
                 case JTokenType.Array:
                     DrawArrayToken((JArray)token, key, value);
                     break;
                 default:
-                    DrawTextField(key, value.ToString());
+                    EditorGUILayout.LabelField("None");
                     break;
             }
         }
@@ -187,10 +190,11 @@ namespace Inheo.UParser
             arrayTokens[key].ReorderableList.DoLayoutList();
         }
 
-        private void DrawTextField(string key, string value)
+        private void DrawSimpleText(string key, string value)
         {
             EditorGUILayout.BeginHorizontal();
-            _currentJson[key] = EditorGUILayout.TextField(key, value);
+            EditorGUILayout.PrefixLabel(key);
+            _currentJson[key] = EditorGUILayout.TextArea(value);
             EditorGUILayout.EndHorizontal();
         }
 
