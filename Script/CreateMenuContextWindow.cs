@@ -14,7 +14,8 @@ namespace Inheo.UParser
         class ReorderableJArray
         {
             public bool IsExpand = true;
-            public Rect Rect;
+            public Rect HeaderRect;
+            public Rect TextRect;
             public readonly JArray JArray;
             public readonly ReorderableList ReorderableList;
 
@@ -30,7 +31,7 @@ namespace Inheo.UParser
 
             public void UpdateExpandState(Event e)
             {
-                if (e.type == EventType.MouseDown && Rect.Contains(e.mousePosition))
+                if (e.type == EventType.MouseDown && HeaderRect.Contains(e.mousePosition))
                 {
                     IsExpand = !IsExpand;
                     ReorderableList.displayAdd = IsExpand;
@@ -146,7 +147,7 @@ namespace Inheo.UParser
         private void DrawArrayToken(JArray jArray, string key, JToken value)
         {
             var indent = EditorGUI.indentLevel;
-            var verticalSpacing = 2f;
+            var verticalSpacing = EditorGUIUtility.standardVerticalSpacing * 2;
 
             if (!arrayTokens.ContainsKey(key))
             {
@@ -159,16 +160,17 @@ namespace Inheo.UParser
                 reorderableList.drawHeaderCallback = rect =>
                 {
                     EditorGUI.LabelField(rect, key + $" (Count: {rJAray.JArray.Count})");
-                    rJAray.Rect = rect;
+                    rJAray.HeaderRect = rect;
                     rJAray.UpdateExpandState(Event.current);
                 };
                 reorderableList.drawElementCallback = (rect, i, isActive, isFocused) =>
                 {
+                    rJAray.TextRect = rect;
                     if (!rJAray.IsExpand) return;
                     EditorGUI.indentLevel = indent + 1;
-                    rect.height = EditorGUIUtility.singleLineHeight;
+                    rect.height = GetElementClearHeight(jArray[i].ToString(), rect);
                     rect.y += verticalSpacing;
-                    jArray[i] = EditorGUI.TextField(rect, jArray[i].ToString());
+                    jArray[i] = EditorGUI.TextArea(rect, jArray[i].ToString());
                     EditorGUI.indentLevel = indent;
                 };
 
@@ -178,7 +180,8 @@ namespace Inheo.UParser
                 };
 
                 reorderableList.onAddCallback = list => list.list.Add(default);
-                reorderableList.elementHeightCallback = i => rJAray.IsExpand ? EditorGUIUtility.singleLineHeight + verticalSpacing : 0;
+                reorderableList.elementHeightCallback = i =>
+                    GetElementHeight(jArray[i].ToString(), rJAray.IsExpand, verticalSpacing, rJAray.TextRect);
             }
 
             arrayTokens[key].ReorderableList.DoLayoutList();
@@ -189,6 +192,21 @@ namespace Inheo.UParser
             EditorGUILayout.BeginHorizontal();
             _currentJson[key] = EditorGUILayout.TextField(key, value);
             EditorGUILayout.EndHorizontal();
+        }
+
+        private float GetElementHeight(string text, bool isExpand, float offset, Rect rect)
+        {
+            if (!isExpand)
+                return 0;
+
+            float height = GetElementClearHeight(text, rect) + offset;
+            return height;
+        }
+
+        private float GetElementClearHeight(string text, Rect rect)
+        {
+            float textHeight = EditorStyles.textArea.CalcHeight(new GUIContent(text), rect.width);
+            return textHeight + EditorGUIUtility.standardVerticalSpacing * 2;
         }
 
         private void TrySaveCurrentJsonIntoTextFile()
