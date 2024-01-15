@@ -15,8 +15,9 @@ namespace Inheo.UParser
         private Vector2 scrollPosition;
         private JObject _currentJson;
 
-        private JValueDrawer simpleTextDrawer;
+        private JValueDrawer jValueDrawer;
         private JArrayDrawer jArrayDrawer;
+        private JObjectDrawer jObjectDrawer;
 
         [MenuItem("Window/UParser")]
         private static void ShowWindow()
@@ -29,10 +30,11 @@ namespace Inheo.UParser
             _window.Show();
         }
 
-        private void Awake()
+        private void OnEnable()
         {
-            simpleTextDrawer = new JValueDrawer();
+            jValueDrawer = new JValueDrawer();
             jArrayDrawer = new JArrayDrawer();
+            jObjectDrawer = new JObjectDrawer();
         }
 
         private void OnGUI()
@@ -94,7 +96,14 @@ namespace Inheo.UParser
                 case JTokenType.None:
                     break;
                 case JTokenType.String:
-                    simpleTextDrawer.Draw(key, value);
+                case JTokenType.Integer:
+                case JTokenType.Float:
+                case JTokenType.Boolean:
+                case JTokenType.Guid:
+                    jValueDrawer.Draw(key, value);
+                    break;
+                case JTokenType.Object:
+                    jObjectDrawer.Draw(key, value);
                     break;
                 case JTokenType.Array:
                     jArrayDrawer.Draw(key, value);
