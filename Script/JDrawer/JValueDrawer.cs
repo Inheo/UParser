@@ -14,8 +14,28 @@ namespace Inheo.UParser.JDrawer
         {
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel(label);
-            token.Value = EditorGUILayout.TextArea(token.ToString());
+            DrawValue(token);
             EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawValue(JValue token)
+        {
+            var value = token.ToString();
+            switch (token.Type)
+            {
+                case JTokenType.Boolean:
+                    token.Value = EditorGUILayout.Toggle(bool.Parse(value));
+                    break;
+                case JTokenType.Integer:
+                    token.Value = EditorGUILayout.IntField(int.Parse(value));
+                    break;
+                case JTokenType.Float:
+                    token.Value = EditorGUILayout.FloatField(float.Parse(value));
+                    break;
+                default:
+                    token.Value = EditorGUILayout.TextArea(value);
+                    break;
+            }
         }
     }
 }
