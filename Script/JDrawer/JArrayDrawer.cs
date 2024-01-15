@@ -51,12 +51,20 @@ namespace Inheo.UParser.JDrawer
 
         internal override void Draw(string label, JToken token)
         {
+            var padding = 15 * EditorGUI.indentLevel;
+            GUILayout.Space(5);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(padding);
+            EditorGUILayout.BeginVertical();
+
             DrawArrayToken(label, (JArray)token);
+
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.EndHorizontal();
         }
 
         private void DrawArrayToken(string key, JArray jArray)
         {
-            var indent = EditorGUI.indentLevel;
             var verticalSpacing = EditorGUIUtility.standardVerticalSpacing * 2;
 
             if (!arrayTokens.ContainsKey(key))
@@ -77,11 +85,9 @@ namespace Inheo.UParser.JDrawer
                 {
                     rJAray.TextRect = rect;
                     if (!rJAray.IsExpand) return;
-                    EditorGUI.indentLevel = indent + 1;
                     rect.height = GetElementClearHeight(jArray[i].ToString(), rect);
                     rect.y += verticalSpacing;
                     jArray[i] = EditorGUI.TextArea(rect, jArray[i].ToString());
-                    EditorGUI.indentLevel = indent;
                 };
 
                 reorderableList.drawNoneElementCallback = rect =>
