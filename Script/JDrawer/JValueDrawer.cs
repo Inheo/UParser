@@ -7,10 +7,10 @@ namespace Inheo.UParser.JDrawer
     {
         internal override void Draw(string label, JToken token)
         {
-            NewMethod(label, (JValue)token);
+            Draw(label, (JValue)token);
         }
 
-        private static void NewMethod(string label, JValue token)
+        private void Draw(string label, JValue token)
         {
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel(label);
