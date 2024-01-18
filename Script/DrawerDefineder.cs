@@ -16,7 +16,7 @@ namespace Inheo.UParser
             jArray = new JArrayDrawer();
         }
 
-        internal static JDrawer.JDrawer All(JTokenType tokenType)
+        internal static JDrawer.JDrawer Find(JTokenType tokenType)
         {
             switch (tokenType)
             {
