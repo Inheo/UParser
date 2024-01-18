@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using UnityEditor;
+using UnityEngine;
 
 namespace Inheo.UParser.JDrawer
 {
@@ -7,6 +8,7 @@ namespace Inheo.UParser.JDrawer
     {
         private readonly JValueDrawer jValueDrawer;
         private readonly JArrayDrawer jArrayDrawer;
+        private bool isExpanded = true;
 
         public JObjectDrawer()
         {
@@ -23,11 +25,18 @@ namespace Inheo.UParser.JDrawer
         {
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
-            var style = EditorStyles.helpBox;
-            style.fontStyle = UnityEngine.FontStyle.Bold;
-            style.fontSize = EditorStyles.boldLabel.fontSize;
-            EditorGUILayout.LabelField(label, style);
+            DrawLabel(label);
 
+            CheckLabelIsClicked();
+
+            if (isExpanded)
+                DrawBody(token);
+
+            EditorGUILayout.EndVertical();
+        }
+
+        private void DrawBody(JObject token)
+        {
             var indent = EditorGUI.indentLevel;
             EditorGUI.indentLevel = indent + 1;
 
@@ -57,7 +66,30 @@ namespace Inheo.UParser.JDrawer
             }
 
             EditorGUI.indentLevel = indent;
-            EditorGUILayout.EndVertical();
+        }
+
+        private void CheckLabelIsClicked()
+        {
+            var labelRect = GUILayoutUtility.GetLastRect();
+            if (Event.current.type == EventType.MouseDown && labelRect.Contains(Event.current.mousePosition))
+            {
+                isExpanded = !isExpanded;
+                Event.current.Use();
+            }
+        }
+
+        private void DrawLabel(string label)
+        {
+            var style = EditorStyles.helpBox;
+            style.fontStyle = FontStyle.Bold;
+            style.fontSize = EditorStyles.boldLabel.fontSize;
+            EditorGUILayout.BeginHorizontal(style);
+            GUILayout.Space(2f);
+            GUILayout.Label(label);
+            GUILayout.FlexibleSpace();
+            GUILayout.Label(isExpanded ? "Collapse" : "Expand");
+            GUILayout.Space(10f);
+            EditorGUILayout.EndHorizontal();
         }
     }
 }
