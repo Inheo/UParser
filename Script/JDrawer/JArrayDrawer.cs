@@ -1,121 +1,53 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace Inheo.UParser.JDrawer
 {
-    internal class JArrayDrawer : JDrawer
+    internal class JArrayDrawer : JBaseDrawer
     {
-        [Serializable]
-        private class ReorderableJArray
+        private Dictionary<int, bool> isFoldout;
+
+        public JArrayDrawer()
         {
-            public bool IsExpand = true;
-            public Rect HeaderRect;
-            public Rect TextRect;
-            public readonly JArray JArray;
-            public readonly ReorderableList ReorderableList;
-
-            public ReorderableJArray(JArray jArray, ReorderableList reorderableList)
-            {
-                JArray = jArray;
-                ReorderableList = reorderableList;
-                ReorderableList.displayAdd = IsExpand;
-                ReorderableList.displayRemove = IsExpand;
-                ReorderableList.draggable = IsExpand;
-                ReorderableList.list = IsExpand ? JArray : new List<JToken>(0);
-            }
-
-            public void UpdateExpandState(Event e)
-            {
-                if (e.type == EventType.MouseDown && HeaderRect.Contains(e.mousePosition))
-                {
-                    IsExpand = !IsExpand;
-                    ReorderableList.displayAdd = IsExpand;
-                    ReorderableList.displayRemove = IsExpand;
-                    ReorderableList.draggable = IsExpand;
-                    ReorderableList.list = IsExpand ? JArray : new List<JToken>(0);
-                    e.Use();
-                }
-            }
-        }
-
-        [SerializeField] private readonly Dictionary<string, ReorderableJArray> arrayTokens;
-
-        internal JArrayDrawer()
-        {
-            arrayTokens = new Dictionary<string, ReorderableJArray>();
+            isFoldout = new();
         }
 
         internal override void Draw(string label, JToken token)
         {
-            var padding = 15 * EditorGUI.indentLevel;
-            GUILayout.Space(5);
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(padding);
-            EditorGUILayout.BeginVertical();
+            var tokenCode = token.GetHashCode();
+            if (!isFoldout.ContainsKey(tokenCode))
+                isFoldout[tokenCode] = true;
 
-            DrawArrayToken(label, (JArray)token);
+            var tmpFoldoutState = isFoldout[tokenCode];
+            tmpFoldoutState = EditorGUILayout.Foldout(tmpFoldoutState, label, true, EditorStyles.foldoutHeader);
 
-            EditorGUILayout.EndVertical();
-            EditorGUILayout.EndHorizontal();
+            isFoldout[tokenCode] = tmpFoldoutState;
+
+            if (!tmpFoldoutState) return;
+            DrawBody(token);
         }
 
-        private void DrawArrayToken(string key, JArray jArray)
+        internal override void DrawBody(JToken token)
         {
-            var verticalSpacing = EditorGUIUtility.standardVerticalSpacing * 2;
+            var indent = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = indent + 1;
 
-            if (!arrayTokens.ContainsKey(key))
+            var style = new GUIStyle(EditorStyles.helpBox);
+            style.fontStyle = FontStyle.Bold;
+            style.fontSize = EditorStyles.boldLabel.fontSize;
+            style.margin.left = (indent + 1) * 15;
+            style.padding.left = -(indent + 1) * 15;
+
+            foreach (var item in token)
             {
-                var reorderableList = new ReorderableList(jArray, typeof(JArray), true, true, true, true);
-                var rJAray = new ReorderableJArray(jArray, reorderableList);
-                arrayTokens[key] = rJAray;
-
-                var reorderableJArray = arrayTokens[key];
-
-                reorderableList.drawHeaderCallback = rect =>
-                {
-                    EditorGUI.LabelField(rect, key + $" (Count: {rJAray.JArray.Count})");
-                    rJAray.HeaderRect = rect;
-                    rJAray.UpdateExpandState(Event.current);
-                };
-                reorderableList.drawElementCallback = (rect, i, isActive, isFocused) =>
-                {
-                    rJAray.TextRect = rect;
-                    if (!rJAray.IsExpand) return;
-                    rect.height = GetElementClearHeight(jArray[i].ToString(), rect);
-                    rect.y += verticalSpacing;
-                    jArray[i] = EditorGUI.TextArea(rect, jArray[i].ToString());
-                };
-
-                reorderableList.drawNoneElementCallback = rect =>
-                {
-                    reorderableList.elementHeight = -10;
-                };
-
-                reorderableList.onAddCallback = list => list.list.Add(default);
-                reorderableList.elementHeightCallback = i =>
-                    GetElementHeight(jArray[i].ToString(), rJAray.IsExpand, verticalSpacing, rJAray.TextRect);
+                EditorGUILayout.BeginVertical(style);
+                DrawerDefineder.Find(item.Type).DrawBody(item);
+                EditorGUILayout.EndVertical();
             }
 
-            arrayTokens[key].ReorderableList.DoLayoutList();
-        }
-
-        private float GetElementHeight(string text, bool isExpand, float offset, Rect rect)
-        {
-            if (!isExpand)
-                return 0;
-
-            float height = GetElementClearHeight(text, rect) + offset;
-            return height;
-        }
-
-        private float GetElementClearHeight(string text, Rect rect)
-        {
-            float textHeight = EditorStyles.textArea.CalcHeight(new GUIContent(text), rect.width);
-            return textHeight + EditorGUIUtility.standardVerticalSpacing * 2;
+            EditorGUI.indentLevel = indent;
         }
     }
 }

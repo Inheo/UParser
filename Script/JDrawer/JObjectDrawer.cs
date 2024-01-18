@@ -1,19 +1,15 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using System;
+using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
 
 namespace Inheo.UParser.JDrawer
 {
-    internal class JObjectDrawer : JDrawer
+    internal class JObjectDrawer : JBaseDrawer
     {
         private bool isExpanded = true;
 
         internal override void Draw(string label, JToken token)
-        {
-            Draw(label, (JObject)token);
-        }
-
-        private void Draw(string label, JObject token)
         {
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
@@ -29,7 +25,7 @@ namespace Inheo.UParser.JDrawer
 
         private void DrawLabel(string label)
         {
-            var style = EditorStyles.helpBox;
+            var style = new GUIStyle(EditorStyles.helpBox);
             style.fontStyle = FontStyle.Bold;
             style.fontSize = EditorStyles.boldLabel.fontSize;
 
@@ -54,21 +50,18 @@ namespace Inheo.UParser.JDrawer
             }
         }
 
-        private void DrawBody(JObject token)
+        internal override void DrawBody(JToken token)
         {
+            var jObject = (JObject)token;
             var indent = EditorGUI.indentLevel;
             EditorGUI.indentLevel = indent + 1;
-            foreach (var item in token)
+
+            foreach (var item in jObject)
             {
-                var jDrawer = DrawerDefineder.Find(item.Value.Type);
-                if (jDrawer == null)
-                    EditorGUILayout.LabelField(item.Value.Type.ToString());
-                else
-                    jDrawer.Draw(item.Key, item.Value);
+                DrawerDefineder.Find(item.Value.Type).Draw(item.Key, item.Value);
             }
 
             EditorGUI.indentLevel = indent;
         }
-
     }
 }
