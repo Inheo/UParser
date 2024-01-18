@@ -1,5 +1,4 @@
 using System.IO;
-using Inheo.UParser.JDrawer;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -15,10 +14,6 @@ namespace Inheo.UParser
         private Vector2 scrollPosition;
         private JObject _currentJson;
 
-        private JValueDrawer jValueDrawer;
-        private JArrayDrawer jArrayDrawer;
-        private JObjectDrawer jObjectDrawer;
-
         [MenuItem("Window/UParser")]
         private static void ShowWindow()
         {
@@ -28,13 +23,6 @@ namespace Inheo.UParser
             _window = GetWindow(typeof(CreateMenuContextWindow));
             _window.titleContent = new GUIContent("UParser");
             _window.Show();
-        }
-
-        private void OnEnable()
-        {
-            jValueDrawer = new JValueDrawer();
-            jArrayDrawer = new JArrayDrawer();
-            jObjectDrawer = new JObjectDrawer();
         }
 
         private void OnGUI()
@@ -91,27 +79,11 @@ namespace Inheo.UParser
 
         private void DrawToken(string key, JToken value)
         {
-            switch (value.Type)
-            {
-                case JTokenType.None:
-                    break;
-                case JTokenType.String:
-                case JTokenType.Integer:
-                case JTokenType.Float:
-                case JTokenType.Boolean:
-                case JTokenType.Guid:
-                    jValueDrawer.Draw(key, value);
-                    break;
-                case JTokenType.Object:
-                    jObjectDrawer.Draw(key, value);
-                    break;
-                case JTokenType.Array:
-                    jArrayDrawer.Draw(key, value);
-                    break;
-                default:
-                    EditorGUILayout.LabelField("None");
-                    break;
-            }
+            var jDrawer = DrawerDefineder.All(value.Type);
+            if (jDrawer == null)
+                EditorGUILayout.LabelField("None");
+            else
+                jDrawer.Draw(key, value);
         }
 
         private void TrySaveCurrentJsonIntoTextFile()

@@ -6,15 +6,7 @@ namespace Inheo.UParser.JDrawer
 {
     internal class JObjectDrawer : JDrawer
     {
-        private readonly JValueDrawer jValueDrawer;
-        private readonly JArrayDrawer jArrayDrawer;
         private bool isExpanded = true;
-
-        public JObjectDrawer()
-        {
-            jValueDrawer = new JValueDrawer();
-            jArrayDrawer = new JArrayDrawer();
-        }
 
         internal override void Draw(string label, JToken token)
         {
@@ -35,37 +27,21 @@ namespace Inheo.UParser.JDrawer
             EditorGUILayout.EndVertical();
         }
 
-        private void DrawBody(JObject token)
+        private void DrawLabel(string label)
         {
-            var indent = EditorGUI.indentLevel;
-            EditorGUI.indentLevel = indent + 1;
+            var style = EditorStyles.helpBox;
+            style.fontStyle = FontStyle.Bold;
+            style.fontSize = EditorStyles.boldLabel.fontSize;
 
-            foreach (var item in token)
-            {
-                switch (item.Value.Type)
-                {
-                    case JTokenType.None:
-                        break;
-                    case JTokenType.String:
-                    case JTokenType.Integer:
-                    case JTokenType.Float:
-                    case JTokenType.Boolean:
-                    case JTokenType.Guid:
-                        jValueDrawer.Draw(item.Key, item.Value);
-                        break;
-                    case JTokenType.Object:
-                        Draw(item.Key, item.Value);
-                        break;
-                    case JTokenType.Array:
-                        jArrayDrawer.Draw(item.Key, item.Value);
-                        break;
-                    default:
-                        EditorGUILayout.LabelField(item.Value.Type.ToString());
-                        break;
-                }
-            }
+            EditorGUILayout.BeginHorizontal(style);
+            GUILayout.Space(2f);
 
-            EditorGUI.indentLevel = indent;
+            GUILayout.Label(label);
+            GUILayout.FlexibleSpace();
+            GUILayout.Label(isExpanded ? "Collapse" : "Expand");
+
+            GUILayout.Space(10f);
+            EditorGUILayout.EndHorizontal();
         }
 
         private void CheckLabelIsClicked()
@@ -78,18 +54,21 @@ namespace Inheo.UParser.JDrawer
             }
         }
 
-        private void DrawLabel(string label)
+        private void DrawBody(JObject token)
         {
-            var style = EditorStyles.helpBox;
-            style.fontStyle = FontStyle.Bold;
-            style.fontSize = EditorStyles.boldLabel.fontSize;
-            EditorGUILayout.BeginHorizontal(style);
-            GUILayout.Space(2f);
-            GUILayout.Label(label);
-            GUILayout.FlexibleSpace();
-            GUILayout.Label(isExpanded ? "Collapse" : "Expand");
-            GUILayout.Space(10f);
-            EditorGUILayout.EndHorizontal();
+            var indent = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = indent + 1;
+            foreach (var item in token)
+            {
+                var jDrawer = DrawerDefineder.Find(item.Value.Type);
+                if (jDrawer == null)
+                    EditorGUILayout.LabelField(item.Value.Type.ToString());
+                else
+                    jDrawer.Draw(item.Key, item.Value);
+            }
+
+            EditorGUI.indentLevel = indent;
         }
+
     }
 }
