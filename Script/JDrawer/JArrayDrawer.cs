@@ -34,20 +34,41 @@ namespace Inheo.UParser.JDrawer
             var indent = EditorGUI.indentLevel;
             EditorGUI.indentLevel = indent + 1;
 
-            var style = new GUIStyle(EditorStyles.helpBox);
-            style.fontStyle = FontStyle.Bold;
-            style.fontSize = EditorStyles.boldLabel.fontSize;
-            style.margin.left = (indent + 1) * 15;
-            style.padding.left = -(indent + 1) * 15;
 
             foreach (var item in token)
             {
-                EditorGUILayout.BeginVertical(style);
-                DrawerDefineder.Find(item.Type).DrawBody(item);
-                EditorGUILayout.EndVertical();
+                var drawer = DrawerDefineder.Find(item.Type);
+                var isNeedDrawRect = !(drawer is JValueDrawer);
+
+                if (isNeedDrawRect)
+                {
+                    BeginVertical();
+                }
+
+                drawer.DrawBody(item);
+
+                if (isNeedDrawRect)
+                {
+                    EditorGUILayout.EndVertical();
+                }
+
+                GUILayout.Space(5);
             }
 
             EditorGUI.indentLevel = indent;
+        }
+
+        private static void BeginVertical()
+        {
+            var indentOffset = (15 * EditorGUI.indentLevel);
+            var style = new GUIStyle();
+            style.padding = new RectOffset(0, 0, 5, 5);
+            style.padding = new RectOffset(0, 0, 5, 5);
+            var groupRect = EditorGUILayout.BeginVertical(style);
+            groupRect.width -= indentOffset;
+            groupRect.x += indentOffset;
+            var color = new Color(0.2509804f, 0.2509804f, 0.2509804f, 1f);
+            EditorGUI.DrawRect(groupRect, color);
         }
     }
 }
