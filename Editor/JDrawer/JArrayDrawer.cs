@@ -37,7 +37,7 @@ namespace Inheo.UParser.JDrawer
 
             foreach (var item in token)
             {
-                var drawer = DrawerDefineder.Find(item.Type);
+                var drawer = JDrawerDefineder.Find(item.Type);
                 var isNeedDrawRect = !(drawer is JValueDrawer);
 
                 if (isNeedDrawRect)

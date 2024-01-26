@@ -49,7 +49,7 @@ namespace Inheo.UParser
 
         private void DrawToken(string key, JToken value)
         {
-            var jDrawer = DrawerDefineder.Find(value.Type);
+            var jDrawer = JDrawerDefineder.Find(value.Type);
             if (jDrawer == null)
                 EditorGUILayout.LabelField("None");
             else
