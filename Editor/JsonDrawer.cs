@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -8,7 +9,14 @@ namespace Inheo.UParser
     internal class JsonDrawer : BaseDrawer
     {
         private JObject _currentJson;
-        private TextAsset _textFile;
+        private TextAsset _jsonFile;
+        private string[] jsonFiles;
+
+        public JsonDrawer()
+        {
+            LoadJsonFiles();
+            EditorApplication.projectChanged += OnProjectChanged;
+        }
 
         internal override void Draw()
         {
@@ -18,15 +26,16 @@ namespace Inheo.UParser
         private void DrawForFileEditor()
         {
             EditorGUI.BeginChangeCheck();
-            _textFile = (TextAsset)EditorGUILayout.ObjectField("Json File:", _textFile, typeof(TextAsset), false);
 
-            if (_textFile == null)
+            DrawJsonFile();
+
+            if (_jsonFile == null)
                 return;
 
             if (EditorGUI.EndChangeCheck())
                 UpdateCurrentJson();
 
-            if (_currentJson == null && _textFile != null)
+            if (_currentJson == null && _jsonFile != null)
                 UpdateCurrentJson();
 
             EditorGUILayout.Space();
@@ -36,6 +45,37 @@ namespace Inheo.UParser
             EditorGUILayout.BeginHorizontal();
             TrySaveCurrentJsonIntoTextFile();
             TryUpdateCurrentJson();
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawJsonFile()
+        {
+            EditorGUILayout.BeginHorizontal();
+            var tmp = (TextAsset)EditorGUILayout.ObjectField("Json File:", _jsonFile, typeof(TextAsset), false);
+
+            if (tmp != null)
+            {
+                string path = AssetDatabase.GetAssetPath(tmp);
+                Debug.Log(path);
+                if (!string.IsNullOrEmpty(path) && !path.EndsWith(".json"))
+                {
+                    tmp = null;
+                    Debug.LogWarning("Please select a JSON file.");
+                }
+                else
+                {
+                    _jsonFile = tmp;
+                }
+            }
+
+            if (jsonFiles != null && jsonFiles.Length > 0)
+            {
+                int selectedIndex = EditorGUILayout.Popup(Array.IndexOf(jsonFiles, AssetDatabase.GetAssetPath(_jsonFile)), jsonFiles);
+                if (selectedIndex >= 0 && selectedIndex < jsonFiles.Length)
+                {
+                    _jsonFile = AssetDatabase.LoadAssetAtPath<TextAsset>(jsonFiles[selectedIndex]);
+                }
+            }
             EditorGUILayout.EndHorizontal();
         }
 
@@ -60,7 +100,7 @@ namespace Inheo.UParser
         {
             if (GUILayout.Button("Save"))
             {
-                File.WriteAllText(AssetDatabase.GetAssetPath(_textFile), _currentJson.ToString());
+                File.WriteAllText(AssetDatabase.GetAssetPath(_jsonFile), _currentJson.ToString());
             }
         }
 
@@ -72,7 +112,27 @@ namespace Inheo.UParser
             }
         }
 
+        private void LoadJsonFiles()
+        {
+            string[] guids = AssetDatabase.FindAssets("t:TextAsset", new[] { "Assets" });
+            System.Collections.Generic.List<string> jsonFilesList = new System.Collections.Generic.List<string>();
+
+            foreach (string guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+
+                if (path.ToLower().EndsWith(".json"))
+                {
+                    jsonFilesList.Add(path);
+                }
+            }
+
+            jsonFiles = jsonFilesList.ToArray();
+        }
+
+        private void OnProjectChanged() => LoadJsonFiles();
+
         private JObject ParseJson(string json) => JObject.Parse(json);
-        private void UpdateCurrentJson() => _currentJson = ParseJson(_textFile.text);
+        private void UpdateCurrentJson() => _currentJson = ParseJson(_jsonFile.text);
     }
 }
