@@ -58,7 +58,7 @@ namespace Inheo.UParser.JDrawer
 
             foreach (var item in jObject)
             {
-                DrawerDefineder.Find(item.Value.Type).Draw(item.Key, item.Value);
+                JDrawerDefineder.Find(item.Value.Type).Draw(item.Key, item.Value);
             }
 
             EditorGUI.indentLevel = indent;

@@ -3,13 +3,13 @@ using Newtonsoft.Json.Linq;
 
 namespace Inheo.UParser
 {
-    internal static class DrawerDefineder
+    internal static class JDrawerDefineder
     {
         private static JValueDrawer jValue;
         private static JObjectDrawer jObject;
         private static JArrayDrawer jArray;
 
-        static DrawerDefineder()
+        static JDrawerDefineder()
         {
             jValue = new JValueDrawer();
             jObject = new JObjectDrawer();

@@ -1,5 +1,3 @@
-using System.IO;
-using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -8,11 +6,15 @@ namespace Inheo.UParser
     internal class CreateMenuContextWindow : EditorWindow
     {
         private static EditorWindow _window;
-        private int tabIndex = 0;
-        private TextAsset _textFile;
 
+        private int tabIndex = 0;
         private Vector2 scrollPosition;
-        private JObject _currentJson;
+        private JsonDrawer jsonDrawer;
+
+        private void OnEnable()
+        {
+            jsonDrawer = new JsonDrawer();
+        }
 
         [MenuItem("Window/UParser")]
         private static void ShowWindow()
@@ -28,16 +30,18 @@ namespace Inheo.UParser
         private void OnGUI()
         {
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+
             var indent = EditorGUI.indentLevel;
             EditorGUI.indentLevel = indent + 1;
-            tabIndex = GUILayout.Toolbar(tabIndex, new string[] { "File", "PlayerPrefs" });
+
+            tabIndex = GUILayout.Toolbar(tabIndex, new string[] { "Json", "XML" });
             switch (tabIndex)
             {
                 case 0:
-                    DrawForFileEditor();
+                    jsonDrawer.Draw();
                     break;
                 case 1:
-                    DrawForPlayerPrefsEditor();
+                    // TODO: draw to xml
                     break;
             }
             EditorGUI.indentLevel = indent;
@@ -45,73 +49,10 @@ namespace Inheo.UParser
             EditorGUILayout.EndScrollView();
         }
 
-        private void DrawForFileEditor()
-        {
-            EditorGUI.BeginChangeCheck();
-            _textFile = (TextAsset)EditorGUILayout.ObjectField("Text Asset", _textFile, typeof(TextAsset), false);
-
-            if (_textFile == null)
-                return;
-
-            if (EditorGUI.EndChangeCheck())
-                UpdateCurrentJson();
-
-            if(_currentJson == null && _textFile != null)
-                UpdateCurrentJson();
-
-            EditorGUILayout.Space();
-
-            DrawCurrentJson();
-
-            EditorGUILayout.BeginHorizontal();
-            TrySaveCurrentJsonIntoTextFile();
-            TryUpdateCurrentJson();
-            EditorGUILayout.EndHorizontal();
-        }
-
-        private void DrawCurrentJson()
-        {
-            foreach (var tokenPair in _currentJson)
-            {
-                DrawToken(tokenPair.Key, tokenPair.Value);
-            }
-        }
-
-        private void DrawToken(string key, JToken value)
-        {
-            var jDrawer = DrawerDefineder.Find(value.Type);
-            if (jDrawer == null)
-                EditorGUILayout.LabelField("None");
-            else
-                jDrawer.Draw(key, value);
-        }
-
-        private void TrySaveCurrentJsonIntoTextFile()
-        {
-            if (GUILayout.Button("Save"))
-            {
-                File.WriteAllText(AssetDatabase.GetAssetPath(_textFile), _currentJson.ToString());
-            }
-        }
-
-        private void TryUpdateCurrentJson()
-        {
-            if (GUILayout.Button("Update"))
-            {
-                UpdateCurrentJson();
-            }
-        }
-
-        private void DrawForPlayerPrefsEditor()
-        {
-        }
-
         private void OnDisable()
         {
+            jsonDrawer = null;
             _window = null;
         }
-
-        private JObject ParseJson(string json) => JObject.Parse(json);
-        private void UpdateCurrentJson() => _currentJson = ParseJson(_textFile.text);
     }
 }
