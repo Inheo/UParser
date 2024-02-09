@@ -8,12 +8,15 @@ namespace Inheo.UParser
 {
     internal class JsonDrawer : BaseDrawer
     {
+        private const string JsonFilePath = "JsonFilePath";
         private JObject _currentJson;
         private TextAsset _jsonFile;
+        private string jsonFilePath;
         private string[] jsonFiles;
 
         public JsonDrawer()
         {
+            LoadSavedJsonFilePath();
             LoadJsonFiles();
             EditorApplication.projectChanged += OnProjectChanged;
         }
@@ -56,7 +59,7 @@ namespace Inheo.UParser
             if (tmp != null)
             {
                 string path = AssetDatabase.GetAssetPath(tmp);
-                Debug.Log(path);
+
                 if (!string.IsNullOrEmpty(path) && !path.EndsWith(".json"))
                 {
                     tmp = null;
@@ -132,7 +135,30 @@ namespace Inheo.UParser
 
         private void OnProjectChanged() => LoadJsonFiles();
 
+        private void UpdateCurrentJson()
+        {
+            SaveJsonFilePath();
+            _currentJson = ParseJson(_jsonFile.text);
+        }
+
         private JObject ParseJson(string json) => JObject.Parse(json);
-        private void UpdateCurrentJson() => _currentJson = ParseJson(_jsonFile.text);
+
+        private void SaveJsonFilePath()
+        {
+            if (_jsonFile != null)
+            {
+                jsonFilePath = AssetDatabase.GetAssetPath(_jsonFile);
+                EditorPrefs.SetString(JsonFilePath, jsonFilePath);
+            }
+        }
+
+        private void LoadSavedJsonFilePath()
+        {
+            jsonFilePath = EditorPrefs.GetString(JsonFilePath, "");
+            if (!string.IsNullOrEmpty(jsonFilePath))
+            {
+                _jsonFile = AssetDatabase.LoadAssetAtPath<TextAsset>(jsonFilePath);
+            }
+        }
     }
 }
