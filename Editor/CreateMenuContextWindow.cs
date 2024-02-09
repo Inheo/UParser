@@ -49,9 +49,8 @@ namespace Inheo.UParser
             EditorGUILayout.EndScrollView();
         }
 
-        private void OnDisable()
+        private void OnDestroy()
         {
-            jsonDrawer = null;
             _window = null;
         }
     }
