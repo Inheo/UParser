@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
@@ -9,10 +10,10 @@ namespace Inheo.UParser
     internal class JsonDrawer : BaseDrawer
     {
         private const string JsonFilePath = "JsonFilePath";
-        private JObject _currentJson;
-        private TextAsset _jsonFile;
-        private string jsonFilePath;
-        private string[] jsonFiles;
+        private JObject currentJson;
+        private TextAsset file;
+        private string currentfilePath;
+        private string[] files;
 
         public JsonDrawer()
         {
@@ -26,35 +27,75 @@ namespace Inheo.UParser
             DrawForFileEditor();
         }
 
+        private void SaveJsonFilePath()
+        {
+            if (file != null)
+            {
+                currentfilePath = AssetDatabase.GetAssetPath(file);
+                EditorPrefs.SetString(JsonFilePath, currentfilePath);
+            }
+        }
+
+        private void LoadSavedJsonFilePath()
+        {
+            currentfilePath = EditorPrefs.GetString(JsonFilePath, "");
+            if (!string.IsNullOrEmpty(currentfilePath))
+            {
+                file = AssetDatabase.LoadAssetAtPath<TextAsset>(currentfilePath);
+            }
+        }
+
+        private void LoadJsonFiles()
+        {
+            string[] guids = AssetDatabase.FindAssets("t:TextAsset", new[] { "Assets" });
+            List<string> jsonFilesList = new List<string>();
+
+            foreach (string guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+
+                if (path.ToLower().EndsWith(".json"))
+                {
+                    jsonFilesList.Add(path);
+                }
+            }
+
+            files = jsonFilesList.ToArray();
+        }
+
         private void DrawForFileEditor()
         {
             EditorGUI.BeginChangeCheck();
 
-            DrawJsonFile();
+            DrawJsonFileSection();
 
-            if (_jsonFile == null)
+            if (file == null)
                 return;
 
-            if (EditorGUI.EndChangeCheck())
-                UpdateCurrentJson();
-
-            if (_currentJson == null && _jsonFile != null)
-                UpdateCurrentJson();
+            TryUpdateJson();
 
             EditorGUILayout.Space();
 
             DrawCurrentJson();
 
             EditorGUILayout.BeginHorizontal();
-            TrySaveCurrentJsonIntoTextFile();
-            TryUpdateCurrentJson();
+            SaveCurrentJsonButton();
+            UpdateCurrentJsonButton();
             EditorGUILayout.EndHorizontal();
         }
 
-        private void DrawJsonFile()
+        private void DrawJsonFileSection()
         {
             EditorGUILayout.BeginHorizontal();
-            var tmp = (TextAsset)EditorGUILayout.ObjectField("Json File:", _jsonFile, typeof(TextAsset), false);
+            DrawFile();
+
+            DrawFilePopup();
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawFile()
+        {
+            var tmp = (TextAsset)EditorGUILayout.ObjectField("Json File:", file, typeof(TextAsset), false);
 
             if (tmp != null)
             {
@@ -67,24 +108,35 @@ namespace Inheo.UParser
                 }
                 else
                 {
-                    _jsonFile = tmp;
+                    file = tmp;
                 }
             }
+        }
 
-            if (jsonFiles != null && jsonFiles.Length > 0)
+        private void DrawFilePopup()
+        {
+            if (files != null && files.Length > 0)
             {
-                int selectedIndex = EditorGUILayout.Popup(Array.IndexOf(jsonFiles, AssetDatabase.GetAssetPath(_jsonFile)), jsonFiles);
-                if (selectedIndex >= 0 && selectedIndex < jsonFiles.Length)
+                int selectedIndex = EditorGUILayout.Popup(Array.IndexOf(files, AssetDatabase.GetAssetPath(file)), files);
+                if (selectedIndex >= 0 && selectedIndex < files.Length)
                 {
-                    _jsonFile = AssetDatabase.LoadAssetAtPath<TextAsset>(jsonFiles[selectedIndex]);
+                    file = AssetDatabase.LoadAssetAtPath<TextAsset>(files[selectedIndex]);
                 }
             }
-            EditorGUILayout.EndHorizontal();
+        }
+
+        private void TryUpdateJson()
+        {
+            if (EditorGUI.EndChangeCheck())
+                UpdateCurrentJson();
+
+            if (currentJson == null && file != null)
+                UpdateCurrentJson();
         }
 
         private void DrawCurrentJson()
         {
-            foreach (var tokenPair in _currentJson)
+            foreach (var tokenPair in currentJson)
             {
                 DrawToken(tokenPair.Key, tokenPair.Value);
             }
@@ -99,15 +151,15 @@ namespace Inheo.UParser
                 jDrawer.Draw(key, value);
         }
 
-        private void TrySaveCurrentJsonIntoTextFile()
+        private void SaveCurrentJsonButton()
         {
             if (GUILayout.Button("Save"))
             {
-                File.WriteAllText(AssetDatabase.GetAssetPath(_jsonFile), _currentJson.ToString());
+                File.WriteAllText(AssetDatabase.GetAssetPath(file), currentJson.ToString());
             }
         }
 
-        private void TryUpdateCurrentJson()
+        private void UpdateCurrentJsonButton()
         {
             if (GUILayout.Button("Update"))
             {
@@ -115,50 +167,13 @@ namespace Inheo.UParser
             }
         }
 
-        private void LoadJsonFiles()
-        {
-            string[] guids = AssetDatabase.FindAssets("t:TextAsset", new[] { "Assets" });
-            System.Collections.Generic.List<string> jsonFilesList = new System.Collections.Generic.List<string>();
-
-            foreach (string guid in guids)
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guid);
-
-                if (path.ToLower().EndsWith(".json"))
-                {
-                    jsonFilesList.Add(path);
-                }
-            }
-
-            jsonFiles = jsonFilesList.ToArray();
-        }
-
-        private void OnProjectChanged() => LoadJsonFiles();
-
         private void UpdateCurrentJson()
         {
             SaveJsonFilePath();
-            _currentJson = ParseJson(_jsonFile.text);
+            currentJson = ParseJson(file.text);
         }
 
+        private void OnProjectChanged() => LoadJsonFiles();
         private JObject ParseJson(string json) => JObject.Parse(json);
-
-        private void SaveJsonFilePath()
-        {
-            if (_jsonFile != null)
-            {
-                jsonFilePath = AssetDatabase.GetAssetPath(_jsonFile);
-                EditorPrefs.SetString(JsonFilePath, jsonFilePath);
-            }
-        }
-
-        private void LoadSavedJsonFilePath()
-        {
-            jsonFilePath = EditorPrefs.GetString(JsonFilePath, "");
-            if (!string.IsNullOrEmpty(jsonFilePath))
-            {
-                _jsonFile = AssetDatabase.LoadAssetAtPath<TextAsset>(jsonFilePath);
-            }
-        }
     }
 }
