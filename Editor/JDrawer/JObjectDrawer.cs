@@ -11,7 +11,13 @@ namespace Inheo.UParser.JDrawer
 
         internal override void Draw(string label, JToken token)
         {
-            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            var indentOffset = (15 * EditorGUI.indentLevel);
+            var color = new Color(0.2509804f, 0.2509804f, 0.2509804f, 1f);
+            GUILayout.Space(5f);
+            var rect = EditorGUILayout.BeginVertical();
+            rect.width -= indentOffset;
+            rect.x += indentOffset;
+            EditorGUI.DrawRect(rect, color);
 
             DrawLabel(label);
 
@@ -25,14 +31,9 @@ namespace Inheo.UParser.JDrawer
 
         private void DrawLabel(string label)
         {
-            var style = new GUIStyle(EditorStyles.helpBox);
-            style.fontStyle = FontStyle.Bold;
-            style.fontSize = EditorStyles.boldLabel.fontSize;
-
-            EditorGUILayout.BeginHorizontal(style);
-            GUILayout.Space(2f);
-
-            GUILayout.Label(label);
+            EditorGUILayout.BeginHorizontal(EditorStyles.boldLabel);
+            GUILayout.Space(15 * EditorGUI.indentLevel);
+            GUILayout.Label(label, EditorStyles.boldLabel);
             GUILayout.FlexibleSpace();
             GUILayout.Label(isExpanded ? "Collapse" : "Expand");
 
