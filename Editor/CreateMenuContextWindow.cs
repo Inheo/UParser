@@ -10,10 +10,12 @@ namespace Inheo.UParser
         private int tabIndex = 0;
         private Vector2 scrollPosition;
         private JsonDrawer jsonDrawer;
+        private XmlDrawer xmlDrawer;
 
         private void OnEnable()
         {
             jsonDrawer = new JsonDrawer();
+            xmlDrawer = new XmlDrawer();
         }
 
         [MenuItem("Window/UParser")]
@@ -41,7 +43,7 @@ namespace Inheo.UParser
                     jsonDrawer.Draw();
                     break;
                 case 1:
-                    // TODO: draw to xml
+                    xmlDrawer.Draw();
                     break;
             }
             EditorGUI.indentLevel = indent;
