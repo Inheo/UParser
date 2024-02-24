@@ -15,11 +15,12 @@ namespace Inheo.UParser
         protected abstract bool IsNeedUpdateConditions { get; }
         protected abstract string FileKey { get; }
         protected abstract string FileExtensions { get; }
+        protected abstract string CurrentText { get; }
         protected string FileText => file.text;
 
         public BaseFileDrawer()
         {
-            LoadSavedJsonFilePath();
+            LoadSavedFilePath();
             LoadJsonFiles();
             EditorApplication.projectChanged += OnProjectChanged;
         }
@@ -44,7 +45,7 @@ namespace Inheo.UParser
             files = jsonFilesList.ToArray();
         }
 
-        protected void SaveJsonFilePath()
+        protected void SaveFilePath()
         {
             if (file != null)
             {
@@ -53,7 +54,7 @@ namespace Inheo.UParser
             }
         }
 
-        protected void LoadSavedJsonFilePath()
+        protected void LoadSavedFilePath()
         {
             currentfilePath = EditorPrefs.GetString(FileKey, "");
             if (!string.IsNullOrEmpty(currentfilePath))
@@ -140,7 +141,7 @@ namespace Inheo.UParser
         {
             if (GUILayout.Button("Save"))
             {
-                File.WriteAllText(AssetDatabase.GetAssetPath(file), FileText);
+                File.WriteAllText(AssetDatabase.GetAssetPath(file), CurrentText);
             }
         }
 

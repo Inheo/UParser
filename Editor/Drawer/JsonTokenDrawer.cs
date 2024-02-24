@@ -3,20 +3,14 @@ using UnityEditor;
 
 namespace Inheo.UParser
 {
-    internal class JsonDrawer : BaseFileDrawer
+    internal class JsonTokenDrawer
     {
         private JObject currentJson;
 
-        protected override bool IsNeedUpdateConditions => currentJson == null;
-        protected override string FileKey => "JsonFilePath";
-        protected override string FileExtensions => ".json";
+        public bool IsCurrentNull => currentJson == null;
+        public string Text => currentJson.ToString();
 
-        protected override void DrawBody()
-        {
-            DrawCurrentJson();
-        }
-
-        private void DrawCurrentJson()
+        internal void Draw()
         {
             foreach (var tokenPair in currentJson)
             {
@@ -33,12 +27,9 @@ namespace Inheo.UParser
                 jDrawer.Draw(key, value);
         }
 
-        protected override void UpdateCurrentData()
+        internal void Load(string json)
         {
-            SaveJsonFilePath();
-            currentJson = ParseJson(FileText);
+            currentJson = JObject.Parse(json);
         }
-
-        private JObject ParseJson(string json) => JObject.Parse(json);
     }
 }
