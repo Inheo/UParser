@@ -21,16 +21,16 @@ namespace Inheo.UParser
         public BaseFileDrawer()
         {
             LoadSavedFilePath();
-            LoadJsonFiles();
+            LoadFiles();
             EditorApplication.projectChanged += OnProjectChanged;
         }
 
-        private void OnProjectChanged() => LoadJsonFiles();
+        private void OnProjectChanged() => LoadFiles();
 
-        private void LoadJsonFiles()
+        private void LoadFiles()
         {
             string[] guids = AssetDatabase.FindAssets("t:TextAsset", new[] { "Assets" });
-            List<string> jsonFilesList = new List<string>();
+            List<string> filesList = new List<string>();
 
             foreach (string guid in guids)
             {
@@ -38,11 +38,11 @@ namespace Inheo.UParser
 
                 if (path.ToLower().EndsWith(FileExtensions))
                 {
-                    jsonFilesList.Add(path);
+                    filesList.Add(path);
                 }
             }
 
-            files = jsonFilesList.ToArray();
+            files = filesList.ToArray();
         }
 
         protected void SaveFilePath()
@@ -73,15 +73,15 @@ namespace Inheo.UParser
                 return;
 
             var isChanged = EditorGUI.EndChangeCheck();
-            TryUpdateJson(isChanged);
+            TryUpdate(isChanged);
 
             EditorGUILayout.Space();
 
             DrawBody();
 
             EditorGUILayout.BeginHorizontal();
-            SaveCurrentJsonButton();
-            UpdateCurrentJsonButton();
+            SaveCurrentButton();
+            UpdateCurrentButton();
             EditorGUILayout.EndHorizontal();
         }
 
@@ -126,7 +126,7 @@ namespace Inheo.UParser
             }
         }
 
-        private void TryUpdateJson(bool isChanged)
+        private void TryUpdate(bool isChanged)
         {
             if (isChanged)
                 UpdateCurrentData();
@@ -137,7 +137,7 @@ namespace Inheo.UParser
 
         protected abstract void UpdateCurrentData();
 
-        private void SaveCurrentJsonButton()
+        private void SaveCurrentButton()
         {
             if (GUILayout.Button("Save"))
             {
@@ -145,7 +145,7 @@ namespace Inheo.UParser
             }
         }
 
-        private void UpdateCurrentJsonButton()
+        private void UpdateCurrentButton()
         {
             if (GUILayout.Button("Update"))
             {
