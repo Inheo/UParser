@@ -105,7 +105,7 @@ namespace Inheo.UParser
                 if (!string.IsNullOrEmpty(path) && !path.EndsWith(FileExtensions))
                 {
                     tmp = null;
-                    Debug.LogWarning("Please select a JSON file.");
+                    Debug.LogWarning($"Please select a {FileExtensions} file.");
                 }
                 else
                 {
