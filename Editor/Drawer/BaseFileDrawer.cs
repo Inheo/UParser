@@ -102,7 +102,7 @@ namespace Inheo.UParser
             {
                 string path = AssetDatabase.GetAssetPath(tmp);
 
-                if (!string.IsNullOrEmpty(path) && !path.EndsWith(".json"))
+                if (!string.IsNullOrEmpty(path) && !path.EndsWith(FileExtensions))
                 {
                     tmp = null;
                     Debug.LogWarning("Please select a JSON file.");
